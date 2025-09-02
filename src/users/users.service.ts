@@ -4,11 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateUserDto } from '../userss/dto/create-user.dto';
-import { UserResponseDto } from '../userss/dto/user-response.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UserResponseDto } from './dto/user-response.dto';
 import { ConfigService } from '@nestjs/config';
 import { getPasswordHash } from '../utils/auth';
 import * as bcrypt from 'bcrypt';
+import { LoginDto } from 'src/auth/dto/login.dto';
 
 @Injectable()
 export class UserService {
@@ -19,10 +20,10 @@ export class UserService {
 
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     const { password } = createUserDto;
-    const existingUser = await this.prisma.user.findMany({
+    const existingUser = await this.prisma.user.findUnique({
       where: { email: createUserDto.email },
     });
-    if (existingUser.length) {
+    if (existingUser) {
       throw new ConflictException(
         `user with this ${createUserDto.email} already exist`,
       );
@@ -65,6 +66,7 @@ export class UserService {
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
+      include: { notes: true },
     });
     if (!user) {
       throw new NotFoundException(`user with id: ${id} not found`);
@@ -72,18 +74,19 @@ export class UserService {
     return new UserResponseDto(user);
   }
 
-  async validateUser(
-    email: string,
-    password: string,
-  ): Promise<UserResponseDto | null> {
+  async validateUser(loginDto: LoginDto): Promise<UserResponseDto | null> {
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { email: loginDto.email },
       include: { password: true },
     });
     if (!user) {
-      throw new NotFoundException(`user with the email: ${email} not found`);
+      throw new NotFoundException(`
+        user with the email: ${loginDto.email} not found`);
     }
-    if (user && (await bcrypt.compare(password, user.password!.hash))) {
+    if (
+      user &&
+      (await bcrypt.compare(loginDto.password, user.password!.hash))
+    ) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...restUser } = user;
       return { ...restUser };

@@ -36,7 +36,7 @@ export function init() {
 }
 
 export default () => ({
-  port: process.env.PORT || 10,
+  port: process.env.PORT || 3000,
   nodeEnv: process.env.NODE_ENV,
   session: {
     secret: process.env.SESSION_SECRET,

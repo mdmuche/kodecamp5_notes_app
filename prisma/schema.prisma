@@ -3,7 +3,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -41,6 +40,13 @@ model Password {
 
   userId String @unique
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Session {
+  id        String @id @default(ulid())
+  sid       String @unique
+  data      String
+  expiresAt String
 }
 
 // write the SQL equivalent for this model
